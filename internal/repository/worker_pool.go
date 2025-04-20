@@ -2,9 +2,12 @@ package repository
 
 import (
 	"github/ArikuWoW/task_service/internal/models"
-	"log"
+	"github/ArikuWoW/task_service/pkg/logger"
+	"math/rand"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type WorkerPool struct {
@@ -33,15 +36,35 @@ func (wp *WorkerPool) AddTaskToStack(task *models.Task) {
 
 func (wp *WorkerPool) worker(id int) {
 	for task := range wp.queue {
-		log.Printf("[Worker %d] Processing task: %s", id, task.ID)
+		logger.Log.Info("Worker processing task",
+			zap.Int("worker_id", id),
+			zap.String("task_id", task.ID),
+		)
 
-		time.Sleep(30 * time.Second)
+		// Имитация времени работы реального приложения
+		// Получаем Ответ от 2-5 минут рандомно
+		delay := time.Duration(2+rand.Intn(4)) * time.Second
+
+		logger.Log.Info("Worker sleeping",
+			zap.Int("worker_id", id),
+			zap.String("task_id", task.ID),
+			zap.Duration("sleep_duration", delay),
+		)
+
+		time.Sleep(delay)
 
 		err := wp.processor.UpdateTaskResult(task.ID, models.StatusDone, "result: OK", "")
 		if err != nil {
-			log.Printf("[Worker %d] Failed task %s: %v", id, task.ID, err)
+			logger.Log.Error("Failed to update task result",
+				zap.Int("worker_id", id),
+				zap.String("task_id", task.ID),
+				zap.Error(err),
+			)
 		} else {
-			log.Printf("[Worker %d] Complete task %s: %v", id, task.ID)
+			logger.Log.Info("Task completed successfully",
+				zap.Int("worker_id", id),
+				zap.String("task_id", task.ID),
+			)
 		}
 
 		wp.wg.Done()
