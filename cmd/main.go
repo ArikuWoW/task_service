@@ -17,21 +17,28 @@ import (
 )
 
 func main() {
+	// Инициализация логгер
 	logger.InitLogger(true)
-	rand.Seed(time.Now().UnixNano())
 	defer logger.Log.Sync()
+
+	rand.Seed(time.Now().UnixNano())
 
 	logger.Log.Info("Logger initialized")
 
+	// Создание репозитория в памяти (в дальнейшем можно поменять на БД)
 	repo := repository.NewInMemoryTaskRepo()
 
+	// Инициализация сервисов
 	service := app.NewService(repo)
 
+	// Создание и запуск воркер пула и 5 воркерами
 	pool := repository.NewWorkerPool(service.Task, 100)
-	pool.Start(4)
+	pool.Start(5)
 
+	// Создание хендлера и подклбчения сервиса с воркер пулом
 	handler := handler.NewHandler(service, pool)
 
+	// Запуск сервера асинхронным методом что бы  в дальнейшем использовать graceful shutdown
 	srv := new(models.Server)
 	go func() {
 		if err := srv.Run("8080", handler.InitRoutes()); err != nil {
@@ -41,13 +48,16 @@ func main() {
 
 	logger.Log.Info("App started")
 
+	// Обработка ctrl+c для graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
+	// Получаем из канала сигнал о завершении
 	<-quit
 
 	logger.Log.Info("App shutting sown")
 
+	// Ждем завершения всех задач из воркер пула и завершаем сервер
 	pool.Wait()
 
 	if err := srv.Shutdown(context.Background()); err != nil {

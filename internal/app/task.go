@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Проверка того, что TaskService реализует интерфейс TaskProcessor
 var _ models.TaskProcessor = (*TaskService)(nil)
 
 type TaskService struct {
@@ -19,6 +20,7 @@ func NewTaskService(repo models.TaskRepository) *TaskService {
 	return &TaskService{repo: repo}
 }
 
+// Создание задачи
 func (s *TaskService) CreateTask(taskType string) (*models.Task, error) {
 	now := time.Now()
 	task := &models.Task{
@@ -46,6 +48,7 @@ func (s *TaskService) CreateTask(taskType string) (*models.Task, error) {
 	return task, nil
 }
 
+// Получение задачи по ID
 func (s *TaskService) GetTask(id string) (*models.Task, error) {
 	task, err := s.repo.FindByID(id)
 	if err != nil {
@@ -65,6 +68,7 @@ func (s *TaskService) GetTask(id string) (*models.Task, error) {
 	return task, nil
 }
 
+// Обновление статуса задачи
 func (s *TaskService) UpdateTaskResult(id string, status models.Status, result string, errMsg string) error {
 	task, err := s.repo.FindByID(id)
 	if err != nil {
@@ -80,6 +84,7 @@ func (s *TaskService) UpdateTaskResult(id string, status models.Status, result s
 	task.Error = errMsg
 	task.UpdatedAt = time.Now()
 
+	// Сохраняем обновленную таску
 	if err := s.repo.Update(task); err != nil {
 		logger.Log.Error("Failed to update task",
 			zap.String("task_id", task.ID),

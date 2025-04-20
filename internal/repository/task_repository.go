@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Создаем внутреннее хранилище для задач
 type InMemoryTaskRepo struct {
 	tasks map[string]*models.Task
 	mu    sync.RWMutex
@@ -20,6 +21,7 @@ func NewInMemoryTaskRepo() *InMemoryTaskRepo {
 	}
 }
 
+// Сохранение задачи
 func (r *InMemoryTaskRepo) Save(task *models.Task) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -35,6 +37,7 @@ func (r *InMemoryTaskRepo) Save(task *models.Task) error {
 	return nil
 }
 
+// Поиск по айди в мапе
 func (r *InMemoryTaskRepo) FindByID(id string) (*models.Task, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -49,6 +52,7 @@ func (r *InMemoryTaskRepo) FindByID(id string) (*models.Task, error) {
 	return task, nil
 }
 
+// Обновление данных таски
 func (r *InMemoryTaskRepo) Update(task *models.Task) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
